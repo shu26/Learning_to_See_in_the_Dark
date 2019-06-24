@@ -1,0 +1,12 @@
+torch==0.4.1
+torchvision
+numpy==1.15.0
+Cython
+cffi
+pandas
+opencv-python
+requests
+matplotlib
+scikit-image
+comet-ml
+
