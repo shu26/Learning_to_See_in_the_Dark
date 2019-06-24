@@ -10,21 +10,26 @@ import torch.nn as nn
 import torch.optim as optim
 
 from model import SeeInDark
+from cometml import Experiment
 
-input_dir = './dataset/Sony/short/'
-gt_dir = './dataset/Sony/long/'
-result_dir = './result_Sony/'
-model_dir = './saved_model/'
+params = {
+        'input_dir': './dataset/Sony/short/',
+        'gt_dir': './dataset/Sony/long/',
+        'result_dir': './result_Sony/',
+        'model_dir': './saved_model/'
+        }
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+print(device)
+
 #get train and test IDs
-train_fns = glob.glob(gt_dir + '0*.ARW')
+train_fns = glob.glob(params['gt_dir'] + '0*.ARW')
 train_ids = []
 for i in range(len(train_fns)):
     _, train_fn = os.path.split(train_fns[i])
     train_ids.append(int(train_fn[0:5]))
 
-test_fns = glob.glob(gt_dir + '/1*.ARW')
+test_fns = glob.glob(params['gt_dir'] + '/1*.ARW')
 test_ids = []
 for i in range(len(test_fns)):
     _, test_fn = os.path.split(test_fns[i])
@@ -35,11 +40,29 @@ for i in range(len(test_fns)):
 ps = 512 #patch size for training
 save_freq = 100
 
-DEBUG = 0
-if DEBUG == 1:
+DEBUG = False
+if DEBUG == True:
     save_freq = 100
     train_ids = train_ids[0:5]
     test_ids = test_ids[0:5]
+
+# use cometml
+cml = False
+set_comet_ml()
+
+def set_comet_ml(self):
+    # epoch, batch_size, lr, resnet_depth, save_name
+    if cml:
+        experiment = Experiment(api_key='XgC28yk6LIhqha2yicN0vohwm',
+                projectname='ltsitd', workspace='shu26')
+        
+        print('send cometml')
+        experiment.log_parameters(params)
+    else:
+        experiment = None
+
+        
+
 
 def pack_raw(raw):
     #pack Bayer image to 4 channels
@@ -93,11 +116,11 @@ for epoch in range(lastepoch,4001):
     for ind in np.random.permutation(len(train_ids)):
         # get the path from image id
         train_id = train_ids[ind]
-        in_files = glob.glob(input_dir + '%05d_00*.ARW'%train_id)
+        in_files = glob.glob(params['input_dir'] + '%05d_00*.ARW'%train_id)
         in_path = in_files[np.random.random_integers(0,len(in_files)-1)]
         _, in_fn = os.path.split(in_path)
 
-        gt_files = glob.glob(gt_dir + '%05d_00*.ARW'%train_id)
+        gt_files = glob.glob(params['gt_dir'] + '%05d_00*.ARW'%train_id)
         gt_path = gt_files[0]
         _, gt_fn = os.path.split(gt_path)
         in_exposure =  float(in_fn[9:-5])
@@ -153,16 +176,16 @@ for epoch in range(lastepoch,4001):
         opt.step()
         g_loss[ind]=loss.cpu().data
 
-        #print("%d %d Loss=%.3f Time=%.3f"%(epoch,cnt,np.mean(g_loss[np.where(g_loss)]),time.time()-st))
+        print("epoch=%d cnt=%d Loss=%.3f Time=%.3f"%(epoch,cnt,np.mean(g_loss[np.where(g_loss)]),time.time()-st))
         
         if epoch%save_freq==0:
-            if not os.path.isdir(result_dir + '%04d'%epoch):
-                os.makedirs(result_dir + '%04d'%epoch)
+            if not os.path.isdir(params['result_dir'] + '%04d'%epoch):
+                os.makedirs(params['result_dir'] + '%04d'%epoch)
             output = out_img.permute(0, 2, 3, 1).cpu().data.numpy()
             output = np.minimum(np.maximum(output,0),1)
             
             temp = np.concatenate((gt_patch[0,:,:,:], output[0,:,:,:]),axis=1)
             im_train = Image.fromarray((temp*255).astype(np.uint8))
-            im_train.save(result_dir + '%04d/%05d_00_train_%d.jpg'%(epoch,train_id,ratio))
-            torch.save(model.state_dict(), model_dir+'checkpoint_sony_e%04d.pth'%epoch)
+            im_train.save(params['result_dir'] + '%04d/%05d_00_train_%d.jpg'%(epoch,train_id,ratio))
+            torch.save(model.state_dict(), params['model_dir']+'checkpoint_sony_e%04d.pth'%epoch)
 
