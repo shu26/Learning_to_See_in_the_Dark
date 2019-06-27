@@ -11,21 +11,23 @@ import torch.optim as optim
 
 from model import SeeInDark
 
-input_dir = './dataset/Sony/short/'
-gt_dir = './dataset/Sony/long/'
-m_path = './saved_model/'
-m_name = 'checkpoint_sony_e4000.pth'
-result_dir = './test_result_Sony/'
+params = {
+        'input_dir': './dataset/Sony/short/',
+        'gt_dir': './dataset/Sony/long/',
+        'm_path': './saved_model/',
+        'm_name': 'checkpoint_sony_e4000.pth',
+        'result_dir': './test_result_Sony/'
+        }
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 #get train and test IDs
-train_fns = glob.glob(gt_dir + '0*.ARW')
+train_fns = glob.glob(params['gt_dir'] + '0*.ARW')
 train_ids = []
 for i in range(len(train_fns)):
     _, train_fn = os.path.split(train_fns[i])
     train_ids.append(int(train_fn[0:5]))
 
-test_fns = glob.glob(gt_dir + '/1*.ARW')
+test_fns = glob.glob(params['gt_dir'] + '/1*.ARW')
 test_ids = []
 for i in range(len(test_fns)):
     _, test_fn = os.path.split(test_fns[i])
@@ -52,19 +54,19 @@ def pack_raw(raw):
 
 
 model = SeeInDark()
-model.load_state_dict(torch.load( m_path + m_name ,map_location={'cuda:1':'cuda:0'}))
+model.load_state_dict(torch.load( params['m_path'] + params['m_name'] ,map_location={'cuda:1':'cuda:0'}))
 model = model.to(device)
-if not os.path.isdir(result_dir):
-    os.makedirs(result_dir)
+if not os.path.isdir(params['result_dir']):
+    os.makedirs(params['result_dir'])
 
 for test_id in test_ids:
     #test the first image in each sequence
-    in_files = glob.glob(input_dir + '%05d_00*.ARW'%test_id)
+    in_files = glob.glob(params['input_dir'] + '%05d_00*.ARW'%test_id)
     for k in range(len(in_files)):
         in_path = in_files[k]
         _, in_fn = os.path.split(in_path)
         print(in_fn)
-        gt_files = glob.glob(gt_dir + '%05d_00*.ARW'%test_id) 
+        gt_files = glob.glob(params['gt_dir'] + '%05d_00*.ARW'%test_id) 
         gt_path = gt_files[0]
         _, gt_fn = os.path.split(gt_path)
         in_exposure =  float(in_fn[9:-5])
@@ -104,8 +106,8 @@ for test_id in test_ids:
         im_scale = Image.fromarray((scale_full*255).astype(np.uint8))
         im_gt = Image.fromarray((gt_full*255).astype(np.uint8))
         
-        im_ori.save(result_dir + '%5d_00_%d_ori.png'%(test_id, ratio))
-        im_out.save(result_dir + '%5d_00_%d_out.png'%(test_id,ratio))
-        im_scale.save(result_dir + '%5d_00_%d_scale.png'%(test_id,ratio))
-        im_gt.save(result_dir + '%5d_00_%d_gt.png'%(test_id,ratio))
+        im_ori.save(params['result_dir'] + '%5d_00_%d_ori.png'%(test_id, ratio))
+        im_out.save(params['result_dir'] + '%5d_00_%d_out.png'%(test_id,ratio))
+        im_scale.save(params['result_dir'] + '%5d_00_%d_scale.png'%(test_id,ratio))
+        im_gt.save(params['result_dir'] + '%5d_00_%d_gt.png'%(test_id,ratio))
 
