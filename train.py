@@ -159,7 +159,7 @@ for epoch in range(lastepoch,4001):
         gt_patch = np.maximum(gt_patch, 0.0)
         
         in_img = torch.from_numpy(input_patch).permute(0,3,1,2).to(device)
-        #gt_img = torch.from_numpy(gt_patch).permute(0,3,1,2).to(device)
+        gt_img = torch.from_numpy(gt_patch).permute(0,3,1,2).to(device)
         
         model.zero_grad()
         out_img = model(in_img)
