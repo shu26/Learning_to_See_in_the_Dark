@@ -28,12 +28,6 @@ for i in range(len(train_fns)):
     _, train_fn = os.path.split(train_fns[i])
     train_ids.append(int(train_fn[0:5]))
 
-test_fns = glob.glob(gt_dir + '/1*.ARW')
-test_ids = []
-for i in range(len(test_fns)):
-    _, test_fn = os.path.split(test_fns[i])
-    test_ids.append(int(test_fn[0:5]))
-
 epochs = 4001
 learning_rate = 1e-4
 ps = 512 #patch size for training
@@ -41,9 +35,8 @@ save_freq = 500
 
 DEBUG = False
 if DEBUG == True:
-    save_freq = 2
+    save_freq = 2 
     train_ids = train_ids[0:5]
-    test_ids = test_ids[0:5]
 
 # use cometml
 cml = True
@@ -83,6 +76,8 @@ def pack_raw(raw):
 def reduce_mean(out_im, gt_im):
     return torch.abs(out_im - gt_im).mean()
 
+################################
+################################
 
 #Raw data takes long time to load. Keep them in memory after loaded.
 gt_images=[None]*6000
@@ -164,10 +159,14 @@ for epoch in range(lastepoch,4001):
         gt_patch = np.maximum(gt_patch, 0.0)
         
         in_img = torch.from_numpy(input_patch).permute(0,3,1,2).to(device)
-        gt_img = torch.from_numpy(gt_patch).permute(0,3,1,2).to(device)
+        #gt_img = torch.from_numpy(gt_patch).permute(0,3,1,2).to(device)
         
         model.zero_grad()
         out_img = model(in_img)
+
+        ######################################
+        # 以下オリジナル
+        ######################################
 
         loss = reduce_mean(out_img, gt_img)
         loss.backward()
@@ -181,25 +180,20 @@ for epoch in range(lastepoch,4001):
         output = np.minimum(np.maximum(output,0),1)
             
         temp = np.concatenate((gt_patch[0,:,:,:], output[0,:,:,:]),axis=1)
-        # scipy.misc.toiamge is not valid
-        # we use pillow method
         im_train = Image.fromarray((temp*255).astype(np.uint8))
 
         # use cometml
-        #metrics = {
-        #        'Loss': np.mean(g_loss[np.where(g_loss)])
-        #        }
         if experiment is not None:
             print("send image")
             experiment.log_image(im_train)
             if cnt == len(train_ids):
                 latest_loss = np.mean(g_loss[np.where(g_loss)])
-                #print("send loss value")
-                #metrics = {
-                #    'Loss': np.mean(g_loss[np.where(g_loss)])
-                #    }
-                #print(metrics["Loss"])
-                #experiment.log_metrics(metrics, step=epoch)
+                print("send loss value")
+                metrics = {
+                    'Loss': np.mean(g_loss[np.where(g_loss)])
+                    }
+                print(metrics["Loss"])
+                experiment.log_metrics(metrics, step=epoch)
         print("epoch=%d cnt=%d Loss=%.3f Time=%.3f"%(epoch,cnt,np.mean(g_loss[np.where(g_loss)]),time.time()-st))
         
         if epoch%save_freq == 0:
