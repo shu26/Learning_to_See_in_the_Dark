@@ -28,21 +28,20 @@ for i in range(len(train_fns)):
     _, train_fn = os.path.split(train_fns[i])
     train_ids.append(int(train_fn[0:5]))
 
-epochs = 4001
+epochs = 4001  # default: 4001
 learning_rate = 1e-4
 ps = 512 #patch size for training
-save_freq = 500
+save_freq = 100 # use in debug
 
-DEBUG = False
+DEBUG = True
 if DEBUG == True:
-    save_freq = 2 
     train_ids = train_ids[0:5]
 
 # use cometml
 cml = True
 
 params = {
-        'epochs': 4001,
+        'epochs': epochs,
         'patch_size': ps,
         'lr': learning_rate
         }
@@ -76,9 +75,6 @@ def pack_raw(raw):
 def reduce_mean(out_im, gt_im):
     return torch.abs(out_im - gt_im).mean()
 
-################################
-################################
-
 #Raw data takes long time to load. Keep them in memory after loaded.
 gt_images=[None]*6000
 input_images = {}
@@ -97,7 +93,7 @@ learning_rate = 1e-4
 model = SeeInDark().to(device)
 model._initialize_weights()
 opt = optim.Adam(model.parameters(), lr = learning_rate)
-for epoch in range(lastepoch,4001):
+for epoch in range(lastepoch, epochs):
     print('---------')
     print(epoch)
     print(len(train_ids))
@@ -164,10 +160,6 @@ for epoch in range(lastepoch,4001):
         model.zero_grad()
         out_img = model(in_img)
 
-        ######################################
-        # 以下オリジナル
-        ######################################
-
         loss = reduce_mean(out_img, gt_img)
         loss.backward()
 
@@ -185,18 +177,19 @@ for epoch in range(lastepoch,4001):
         # use cometml
         if experiment is not None:
             print("send image")
-            experiment.log_image(im_train)
+            experiment.log_image(im_train, name="%04d_%04d" % (epoch, cnt))
             if cnt == len(train_ids):
                 latest_loss = np.mean(g_loss[np.where(g_loss)])
-                print("send loss value")
-                metrics = {
-                    'Loss': np.mean(g_loss[np.where(g_loss)])
-                    }
-                print(metrics["Loss"])
-                experiment.log_metrics(metrics, step=epoch)
+                #print("send loss value")
+                #metrics = {
+                #    'Loss': np.mean(g_loss[np.where(g_loss)])
+                #    }
+                #print(metrics["Loss"])
+                #experiment.log_metrics(metrics, step=epoch)
         print("epoch=%d cnt=%d Loss=%.3f Time=%.3f"%(epoch,cnt,np.mean(g_loss[np.where(g_loss)]),time.time()-st))
         
         if epoch%save_freq == 0:
+            print("now saving")
             if not os.path.isdir(result_dir + '%04d' % epoch):
                 os.makedirs(result_dir + '%04d' % epoch)
             output = out_img.permute(0, 2, 3, 1).cpu().data.numpy()
