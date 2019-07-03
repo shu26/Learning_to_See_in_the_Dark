@@ -31,9 +31,9 @@ for i in range(len(train_fns)):
 epochs = 4001  # default: 4001
 learning_rate = 1e-4
 ps = 512 #patch size for training
-save_freq = 100 # use in debug
+save_freq = 1000
 
-DEBUG = True
+DEBUG = False
 if DEBUG == True:
     train_ids = train_ids[0:5]
 
@@ -52,7 +52,6 @@ if cml:
     print('send cometml')
     experiment.log_parameters(params)
 else:
-    print('iyaiyaiyaiya')
     experiment = None
 
 
@@ -109,8 +108,6 @@ for epoch in range(lastepoch, epochs):
         # get the path from image id
         train_id = train_ids[ind]
         in_files = glob.glob(input_dir + '%05d_00*.ARW'%train_id)
-        #print("=======")
-        #print(len(in_files))
         in_path = in_files[np.random.random_integers(0, len(in_files)-1)]
         _, in_fn = os.path.split(in_path)
 
@@ -180,12 +177,6 @@ for epoch in range(lastepoch, epochs):
             experiment.log_image(im_train, name="%04d_%04d" % (epoch, cnt))
             if cnt == len(train_ids):
                 latest_loss = np.mean(g_loss[np.where(g_loss)])
-                #print("send loss value")
-                #metrics = {
-                #    'Loss': np.mean(g_loss[np.where(g_loss)])
-                #    }
-                #print(metrics["Loss"])
-                #experiment.log_metrics(metrics, step=epoch)
         print("epoch=%d cnt=%d Loss=%.3f Time=%.3f"%(epoch,cnt,np.mean(g_loss[np.where(g_loss)]),time.time()-st))
         
         if epoch%save_freq == 0:
@@ -196,8 +187,6 @@ for epoch in range(lastepoch, epochs):
             output = np.minimum(np.maximum(output,0),1)
             
             temp = np.concatenate((gt_patch[0,:,:,:], output[0,:,:,:]),axis=1)
-            # scipy.misc.toiamge is not valid
-            # we use pillow method
             im_train = Image.fromarray((temp*255).astype(np.uint8))
             im_train.save(result_dir + '%04d/%05d_00_train_%d.jpg' % (epoch,train_id,ratio))
             torch.save(model.state_dict(), model_dir + 'checkpoint_sony_e%04d.pth' % epoch)
