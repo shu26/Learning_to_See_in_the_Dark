@@ -18,4 +18,8 @@ The result will be saved in "result_Sony" folder, and the trained model will be 
 ## Testing  
 Download the trained model from the [original code](https://github.com/cchen156/Learning-to-See-in-the-Dark) and put it folder "saved_model".
 To test the model, clone this repository and run `python test.py`.  
- 
+  
+## Reference Codes  
+I referenced the following codes for this implementation.  
+- [https://github.com/cchen156/Learning-to-See-in-the-Dark](https://github.com/cchen156/Learning-to-See-in-the-Dark)
+- [https://github.com/ninetf135246/pytorch-Learning-to-See-in-the-Dark](https://github.com/ninetf135246/pytorch-Learning-to-See-in-the-Dark)
