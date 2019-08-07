@@ -16,7 +16,7 @@ params = {
         'gt_dir': './dataset/Sony/long/',
         'm_path': './saved_model/',
         'm_name': 'checkpoint_sony_e4000.pth',
-        'result_dir': './test_result_Sony/'
+        'result_dir': './result_Sony/'
         }
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
